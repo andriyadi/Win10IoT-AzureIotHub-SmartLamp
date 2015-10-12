@@ -18,6 +18,7 @@ adc.begin(function (err) {
 
 var currentReadAdcZero = 0;
 
+//Function to get average reading when lamp is not switched on --> zero current
 function readAdcZero() {
     var total = 0;
     var count = 1024;
@@ -43,8 +44,12 @@ function readCurrentSensor(channel) {
         currentTotal += (readCS * readCS);
     }
     
+    //This formula is retrieved by doing linear regression. Specific for ACS712 5A
     var rmsCS = (Math.sqrt(1.0 * currentTotal / CS_READ_SAMPLE_NUM) - 1.7543) / 0.259;
-    return rmsCS;
+    
+    //return in milliampere. Substracted by magic number I got for zero current.
+
+    return (rmsCS - 7.0);
 }
 
 app.get("/", function (req, res) {
@@ -53,12 +58,6 @@ app.get("/", function (req, res) {
 });
 
 app.get("/toggle", function (req, res) {
-    //if (currentValue == Windows.Devices.Gpio.GpioPinValue.high) {
-    //    currentValue = Windows.Devices.Gpio.GpioPinValue.low;
-    //} else {
-    //    currentValue = Windows.Devices.Gpio.GpioPinValue.high;
-    //}
-    //switchPin.write(currentValue);
     
     lamp.toggle();
 
@@ -154,7 +153,7 @@ function sendTelemetryData() {
         return;
     }
 
-    var currentMA = readCurrentSensor(0) - 7.0;
+    var currentMA = readCurrentSensor(0);
     var wattage = 220 * currentMA * 1.0 / 1000;
 
     var data = JSON.stringify({

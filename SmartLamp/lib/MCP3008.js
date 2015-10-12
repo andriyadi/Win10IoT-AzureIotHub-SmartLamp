@@ -15,12 +15,13 @@ MCP3008.prototype.begin = function(cb) {
     var spiQuery = Windows.Devices.Spi.SpiDevice.getDeviceSelector("SPI0");
     
     var self = this;
+    
+    //Make sure to put second argument to call findAllAsync(spiQuery, null) method --> second argument should be null
     Windows.Devices.Enumeration.DeviceInformation.findAllAsync(spiQuery, null).done(function (devices) {
         if (devices != null && devices.length > 0) {
             Windows.Devices.Spi.SpiDevice.fromIdAsync(devices[0].id, spiSettings).done(function (device) {
                 if (device != null) {
                     self._mcp3008 = device;
-                    //readAdcZero();
                     cb(null);
                 }
                 else {
@@ -47,6 +48,7 @@ MCP3008.prototype.read = function(channel) {
     var receiveBuffer = [0, 0, 0];
     
     this._mcp3008.transferFullDuplex(transmitBuffer, receiveBuffer);
+
     //first byte returned is 0 (00000000), 
     //second byte returned we are only interested in the last 2 bits 00000011 (mask of &3) 
     //then shift result 8 bits to make room for the data from the 3rd byte (makes 10 bits total)
