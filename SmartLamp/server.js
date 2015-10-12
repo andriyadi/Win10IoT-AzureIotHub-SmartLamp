@@ -91,7 +91,7 @@ var server = app.listen(1337, function () {
 var iothub = require('./lib/iothub');
 var iothubDev = require("azure-iot-device");
 
-var iothubConnString = "HostName=dycode-iot.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=0x6guyDTwTWKbbbVxNT6d/kxPRIoLZf5jryvoK79EpU=";
+var iothubConnString = "[IOT HUB CONNECTION STRING]";
 var iothubRegistry = new iothub.Registry(iothubConnString, new iothub.Https());
 
 var iothubClient;
@@ -142,7 +142,9 @@ function deviceIsReady(dev) {
     setInterval(sendTelemetryData, 5000);
 
     //listen for notif
-    setInterval(function () { if (!isWaiting) waitForNotifications(); }, 200);
+    setInterval(function () {
+        if (!isWaiting) waitForNotifications();
+    }, 200);
 }
 
 // function to send telemetry data
@@ -152,10 +154,14 @@ function sendTelemetryData() {
         return;
     }
 
-    var currentMA = readCurrentSensor(0);
+    var currentMA = readCurrentSensor(0) - 7.0;
     var wattage = 220 * currentMA * 1.0 / 1000;
 
-    var data = JSON.stringify({ "DeviceID": lamp.deviceId, "Wattage": wattage });
+    var data = JSON.stringify({
+        "DeviceID": lamp.deviceId, 
+        "Wattage": wattage
+    });
+
     console.log("Sending device telemetry data:\n" + data);
 
     iothubClient.sendEvent(new iothubDev.Message(data), printResultFor('send'));
