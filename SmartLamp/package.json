@@ -1,0 +1,15 @@
+{
+  "name": "SmartLamp",
+  "version": "0.1.0",
+  "description": "SmartLamp",
+  "main": "server.js",
+  "author": {
+    "name": "andri",
+    "email": "an.dri@me.com"
+  },
+  "dependencies": {
+    "azure-iot-common": "0.0.1",
+    "azure-iot-device": "0.0.1",
+    "express": "^4.13.3"
+  }
+}
