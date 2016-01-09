@@ -19,6 +19,8 @@ var cs = new CurrentSensor(0);
 var Camera = require("./lib/Camera");
 var cam = new Camera("SmartHomeCapture.jpg");
 
+var USE_LIGHT_SENSOR = true;
+var USE_SOUND_SENSOR = true;
 
 /*
 var gpio = Windows.Devices.Gpio.GpioController.getDefault();
@@ -69,15 +71,15 @@ Part of code that's responsible for uploading captured photo's binary to Azure B
 */
 var azure = require('azure-storage');
 var storageAccountName = "[YOUR_STORAGE_ACCOUNT_NAME]";
-var storageAccountKey = "[YOUR_STORAGE_ACCOUNT_PASS]";
+var storageAccountKey = "[YOUR_STORAGE_ACCOUNT_KEY]";
 
 var blobSvc = azure.createBlobService(storageAccountName, storageAccountKey, storageAccountName + '.blob.core.windows.net');
 
 var blobIsReady = false;
 blobSvc.createContainerIfNotExists('smarthome', { publicAccessLevel: 'blob' }, function (error, result, response) {
     if (!error) {
-        // Container exists and is private
-        console.log("Yay!");
+        // Blob container is created!
+        console.log("Yay! Blob container is created");
         blobIsReady = true;
     }
 });
@@ -136,7 +138,7 @@ presence.onPresenceUndetected(function () {
 
 
 
-//Main loop
+//Kinda main loop for detecting light and sound
 var lightSensorThresholdOn = 1000;
 var lightSensorThresholdOff = 60;
 
@@ -145,26 +147,30 @@ setInterval(function () {
     //Get ADC instance from current sensor, instead of creating one.
     var theADC = cs.adc;
 
-    //Read ADC channel 1, connected to light sensor
-    var adc1 = theADC.read(1);
+    if (USE_LIGHT_SENSOR) {
+        //Read ADC channel 1, connected to light sensor
+        var adc1 = theADC.read(1);
 
-    if (!lamp.isOn() &&  adc1 >= lightSensorThresholdOn) {
-        lamp.switchOn();
-        setTimeout(function () {
-            adc1 = theADC.read(1);
-            lightSensorThresholdOff = adc1;
+        if (!lamp.isOn() && adc1 >= lightSensorThresholdOn) {
+            lamp.switchOn();
+            setTimeout(function () {
+                adc1 = theADC.read(1);
+                lightSensorThresholdOff = adc1;
 
-        }, 1000);
+            }, 1000);
+        }
+
+        if (lamp.isOn() && (adc1 < lightSensorThresholdOff)) {
+            lamp.switchOff();
+        }
     }
-    
-    if (lamp.isOn() && (adc1 < lightSensorThresholdOff)) {
-        lamp.switchOff();
-    }
 
-    //Read ADC channel 2, connected to sound sensor
-    var adc2 = theADC.read(2);
-    if (adc2 > 5) {
-        presenceDetected();
+    if (USE_SOUND_SENSOR) {
+        //Read ADC channel 2, connected to sound sensor
+        var adc2 = theADC.read(2);
+        if (adc2 > 5) { //5 is my magic number, you should adjust
+            presenceDetected();
+        }
     }
 
 }, 500);
