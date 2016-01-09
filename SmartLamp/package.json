@@ -8,8 +8,9 @@
     "email": "an.dri@me.com"
   },
   "dependencies": {
-    "azure-iot-common": "0.0.1",
-    "azure-iot-device": "0.0.1",
+    "azure-iot-common": "1.0.0-preview.5",
+    "azure-iot-device": "1.0.0-preview.5",
+    "azure-storage": "^0.6.0",
     "express": "^4.13.3"
   }
 }

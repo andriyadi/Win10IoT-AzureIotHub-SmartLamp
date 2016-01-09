@@ -48,11 +48,16 @@
     <Capability Name="internetClient" />
     <Capability Name="internetClientServer" />
     <Capability Name="privateNetworkClientServer" />
+    <!--Webcam-->
+    <uap:Capability Name="picturesLibrary" />
+    <uap:Capability Name="videosLibrary" />
     <DeviceCapability Name="serialcommunication">
       <Device Id="any">
         <Function Type="name:serialPort" />
       </Device>
-    </DeviceCapability>
+    </DeviceCapability>    
+    <DeviceCapability Name="microphone"/>
+    <DeviceCapability Name="webcam"/>
   </Capabilities>
 
   <Extensions>
