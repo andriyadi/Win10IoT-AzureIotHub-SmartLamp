@@ -2,55 +2,175 @@
 var express = require("express")
     , app = express()
     , SmartLamp = require("./lib/SmartLamp")
-    , MCP3008 = require("./lib/MCP3008")
+//, MCP3008 = require("./lib/MCP3008")
+    , CurrentSensor = require("./lib/CurrentSensor.js")
+    , PresenceDetector = require("./lib/PresenceDetector")
 
 var uwp = require("uwp");
 uwp.projectNamespace("Windows");
 
+//Lamp that can be switch-on/off using GPIO 5
 var lamp = new SmartLamp(5, "smartlamp1");
-var adc = new MCP3008();
 
-adc.begin(function (err) {
-    if (!err) {
-        readAdcZero();
+//Current sensor using ADC MCP3008 channel 0
+var cs = new CurrentSensor(0);
+
+//Web camera 
+var Camera = require("./lib/Camera");
+var cam = new Camera("SmartHomeCapture.jpg");
+
+
+/*
+var gpio = Windows.Devices.Gpio.GpioController.getDefault();
+var pirPin = gpio.openPin(12);
+//pirPin.debounceTimeout = 50;
+pirPin.setDriveMode(Windows.Devices.Gpio.GpioPinDriveMode.input);
+//pirPin.write(Windows.Devices.Gpio.GpioPinValue.low);
+
+pirPin.addEventListener("valuechanged", function (eventArgs) {
+    
+    //var gpioPinValue = pirPin.read();
+    //if (gpioPinValue == Windows.Devices.Gpio.GpioPinValue.high) {
+    //    console.log("Motion detected");
+    //    lamp.switchOn();
+    //}
+    //else {
+    //    console.log("Motion undetected");
+    //    lamp.switchOff();
+    //}
+
+    if (eventArgs.edge == Windows.Devices.Gpio.GpioPinEdge.risingEdge) {
+        console.log("Motion detected");
+        lamp.switchOn();
+    }
+    else if (eventArgs.edge == Windows.Devices.Gpio.GpioPinEdge.fallingEdge) {
+        console.log("Motion undetected");
+        lamp.switchOff();
+    }
+    //console.log("ooooo");
+});
+*/
+
+//setInterval(function () {
+//    var gpioPinValue = pirPin.read();
+//    if (gpioPinValue == Windows.Devices.Gpio.GpioPinValue.high) {
+//        console.log("Motion detected");
+//        lamp.switchOn();
+//    }
+//    else {
+//        console.log("Motion undetected");
+//        lamp.switchOff();
+//    }
+//}, 500);
+
+/*
+Part of code that's responsible for uploading captured photo's binary to Azure Blob Storage
+*/
+var azure = require('azure-storage');
+var storageAccountName = "[YOUR_STORAGE_ACCOUNT_NAME]";
+var storageAccountKey = "[YOUR_STORAGE_ACCOUNT_PASS]";
+
+var blobSvc = azure.createBlobService(storageAccountName, storageAccountKey, storageAccountName + '.blob.core.windows.net');
+
+var blobIsReady = false;
+blobSvc.createContainerIfNotExists('smarthome', { publicAccessLevel: 'blob' }, function (error, result, response) {
+    if (!error) {
+        // Container exists and is private
+        console.log("Yay!");
+        blobIsReady = true;
     }
 });
 
-var currentReadAdcZero = 0;
-
-//Function to get average reading when lamp is not switched on --> zero current
-function readAdcZero() {
-    var total = 0;
-    var count = 1024;
-    for (var i = 0; i < count; i++) {
-        total += adc.read(0);
+function uploadBlob(file, callback) {
+    if (!blobIsReady) {
+        return;
     }
-    
-    currentReadAdcZero = total * 1.0 / count;
-    console.log(currentReadAdcZero);
+
+    blobSvc.createBlockBlobFromLocalFile('smarthome', file.name, file.path, function (error, result, response) {
+        if (!error) {
+            // file uploaded
+            if (callback) {
+                callback(null, "http://" + storageAccountName + '.blob.core.windows.net/smarthome/' + result);
+            }
+        }
+    });
+}
+//End of blob storage-related code
+
+
+//Event handler upon detection of presence
+function presenceDetected() {
+
+    //When presence detected, turn on the lamp to better capture the photo
+    lamp.switchOn();
+    //takePicture();
+
+    //Take photo of that intuder
+    cam.takePhoto(function (err, file) {
+        console.log(file);
+
+        //Upload photo binary, and get the photo URL
+        uploadBlob(file, function (err2, url) {
+            if (url) {
+
+                //Notify newly captured photo to Azure IoT Hub
+                sendMotionCapturedData(url);
+            }
+        });
+
+        //take one more
+        //cam.takePhoto(function (err, file) {
+        //    uploadBlob(file);
+        //});
+    });
 }
 
-function readCurrentSensor(channel) {
+//Presence detector using PIR sensor
+var presence = new PresenceDetector(12);
+presence.onPresenceDetected(function () {
+    presenceDetected();
+});
+presence.onPresenceUndetected(function () {
+    lamp.switchOff();
+});
+
+
+
+//Main loop
+var lightSensorThresholdOn = 1000;
+var lightSensorThresholdOff = 60;
+
+setInterval(function () {
     
-    //var adc = readAdc(channel);
-    //var mA = (3.4 / 189.44) * (adc - adcZero) * 1000;
-    //return mA;
+    //Get ADC instance from current sensor, instead of creating one.
+    var theADC = cs.adc;
 
-    var CS_READ_SAMPLE_NUM = 255;
+    //Read ADC channel 1, connected to light sensor
+    var adc1 = theADC.read(1);
 
-    var currentTotal = 0;
-    for (var i = 0; i < CS_READ_SAMPLE_NUM; i++) {
-        var readCS = adc.read(channel) - currentReadAdcZero;
-        currentTotal += (readCS * readCS);
+    if (!lamp.isOn() &&  adc1 >= lightSensorThresholdOn) {
+        lamp.switchOn();
+        setTimeout(function () {
+            adc1 = theADC.read(1);
+            lightSensorThresholdOff = adc1;
+
+        }, 1000);
     }
     
-    //This formula is retrieved by doing linear regression. Specific for ACS712 5A
-    var rmsCS = (Math.sqrt(1.0 * currentTotal / CS_READ_SAMPLE_NUM) - 1.7543) / 0.259;
-    
-    //return in milliampere. Substracted by magic number I got for zero current.
+    if (lamp.isOn() && (adc1 < lightSensorThresholdOff)) {
+        lamp.switchOff();
+    }
 
-    return (rmsCS - 7.0);
-}
+    //Read ADC channel 2, connected to sound sensor
+    var adc2 = theADC.read(2);
+    if (adc2 > 5) {
+        presenceDetected();
+    }
+
+}, 500);
+
+
+//Express' Routes
 
 app.get("/", function (req, res) {
     res.set('Content-Type', 'text/plain');
@@ -73,7 +193,7 @@ app.get("/adc", function (req, res) {
 });
 
 app.get("/sensor/current", function (req, res) {
-    var curVal = readCurrentSensor(0);
+    var curVal = cs.readCurrent();
     res.json({ value: curVal });
 });
 
@@ -95,7 +215,7 @@ var iothubRegistry = new iothub.Registry(iothubConnString, new iothub.Https());
 
 var iothubClient;
 
-//first, check if device is register
+//first, check if device is registered
 iothubRegistry.get(lamp.deviceId, function (err, res, obj) {
     if (obj) {
         console.log(obj);
@@ -129,8 +249,7 @@ function deviceIsReady(dev) {
     var connStr = "HostName=" + iothubRegistry.config.host + ";CredentialScope=Device;DeviceId=" + dev.deviceId + ";SharedAccessKey=" + dev.authentication.SymmetricKey.primaryKey;
     lamp.setIotHubConnectionString(connStr);
     
-    //set client
-    
+    //set client    
     iothubClient = new iothubDev.Client(connStr, new iothub.Https());
     
     //register metadata first
@@ -138,12 +257,12 @@ function deviceIsReady(dev) {
     iothubClient.sendEvent(metadataMsg, printResultFor('send'));
     
     // start telemetry data send routing
-    setInterval(sendTelemetryData, 5000);
+    setInterval(sendTelemetryData, 10000);
 
     //listen for notif
     setInterval(function () {
         if (!isWaiting) waitForNotifications();
-    }, 200);
+    }, 1000);
 }
 
 // function to send telemetry data
@@ -153,17 +272,45 @@ function sendTelemetryData() {
         return;
     }
 
-    var currentMA = readCurrentSensor(0);
+    var currentMA = cs.readCurrent();
     var wattage = 220 * currentMA * 1.0 / 1000;
+
+    var adc1 = cs.adc.read(1);
+    var adc2 = cs.adc.read(2);
 
     var data = JSON.stringify({
         "DeviceID": lamp.deviceId, 
-        "Wattage": wattage
+        "Wattage": wattage,
+        "lightSensor": adc1,
+        "soundSensor": adc2
     });
 
     console.log("Sending device telemetry data:\n" + data);
 
     iothubClient.sendEvent(new iothubDev.Message(data), printResultFor('send'));
+}
+
+// Notify Azure-IoT-Hub upon photo captured, so anyone listening can react to newly available photo URL.
+function sendMotionCapturedData(photoUrl) {
+
+    if (!iothubClient) {
+        return;
+    }
+
+    var currentMA = cs.readCurrent();
+    var wattage = 220 * currentMA * 1.0 / 1000;
+
+    var data = JSON.stringify({
+        "DeviceID": lamp.deviceId,
+        "motionDetected": true,
+        "capturedPhotoUrl": photoUrl
+    });
+
+    console.log("Sending device alert data:\n" + data);
+
+    iothubClient.sendEvent(new iothubDev.Message(data), printResultFor('sendAlertData'));
+
+    sendTelemetryData();
 }
 
 // function to wait on notifications
@@ -211,4 +358,5 @@ function printResultFor(op) {
     };
 }
 
+ 
 uwp.close();
