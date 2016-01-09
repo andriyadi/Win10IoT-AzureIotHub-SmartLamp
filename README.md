@@ -20,17 +20,20 @@ New features:
 To properly deploy the project, you need to prepare following components:
 
 * Raspberry Pi 2 with Windows 10 IoT Core OS
-* Solid state AC switch circuit (will detail it later)
-* Lamp
+* Solid state AC switch circuit (circuit is below)
+* AC light bulb
 * AC current sensor ACS712 5A
 * Analog to Digital Converter IC MCP3008
-* Voltage divider circuit to convert 5 volts to 3.3 volts. Output from ACS712 is 5 volts, while Raspberry Pi expects 3.3 volts. 
+* Voltage divider circuit to convert 5 volts to 3.3 volts. Output from ACS712 is in 5 volts level, while Raspberry Pi expects 3.3 volts. 
 
 **Update:**
 Optionally you need additional components for the new features:
 * Webcam. Any webcam should do. I use Logitech C170
 * Piezoelectric infrared (PIR) sensor
 * Sound sensor. I use [this one](http://www.dfrobot.com/index.php?route=product/product&product_id=83#.VpCJbxWriko) from DFRobot
+
+**Circuit**
+![Circuit](https://raw.githubusercontent.com/andriyadi/Win10IoT-AzureIotHub-SmartLamp/master/Circuit.jpeg)
 
 ##Azure IoT Hub
 You need to have [Azure IoT Hub](https://azure.microsoft.com/en-us/develop/iot/) account in order to try control device remotely and sending wattage. After you setup an Azure IoT Hub instance, you should change `[IOT HUB CONNECTION STRING]` value in `server.js` file with an appropriate connection string. Refer to [Azure IoT Hub documentation](https://azure.microsoft.com/en-us/documentation/articles/iot-hub-devguide/) on how to get that the connection string.
