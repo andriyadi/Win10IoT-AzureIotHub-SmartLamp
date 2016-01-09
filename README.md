@@ -6,7 +6,7 @@ The app is written in **Node.js**, and leverages **Azure IoT Hub** for collectin
 I use this project for a demo during my talk about Windows 10 for Makers in [**Microsoft TechDays 2015 Indonesia**](http://aka.ms/techdaysid) event.
 
 **Update:**
-I also use this project to do a demo in [**Bandung IoT Developer Day**](http://edu.dycode.co.id/bdg-iotdevday/) on Nov 14, 2015, for my talk about "Raspberry Pi 2 + Windows 10 IoT Core + Node.js". Of course, I added some new features.
+I also use this project to do a demo in [**Bandung IoT Developer Day**](http://edu.dycode.co.id/bdg-iotdevday/) on Nov 14, 2015, for my talk about "Raspberry Pi 2 + Windows 10 IoT Core + Node.js". Of course, I added some new features. Here is my slide for the talk: [http://www.slideshare.net/andri_yadi/raspberry-pi-2-windows-10-iot-core-nodejs](http://www.slideshare.net/andri_yadi/raspberry-pi-2-windows-10-iot-core-nodejs)
 
 New features:
 * Detect motion using PIR sensor
@@ -55,7 +55,5 @@ However, as we know, Raspberry can't read analog data directly. For that, I use 
 Inside the project, you'll find a JavaScript class (`/lib/MCP3008.js`) for reading analog data from MCP3008 via Serial Peripheral Interface (SPI). 
 
 There are a lot of samples to read data from SPI using C#, but I haven't found one that uses Node.js. I kind of struggle to correctly query and access SPI device in Windows 10 IoT Core with Node.js. After get the right instance, reading the analog data out of MCP3008 is simple. Hopefully the class will save your time.
-
-
 
 
