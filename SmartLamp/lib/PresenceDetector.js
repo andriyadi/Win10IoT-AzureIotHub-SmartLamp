@@ -1,69 +1,11 @@
-﻿'use strict';
+﻿// Copyright (c) DycodeX. All rights reserved.
+// Author: Andri Yadi
 
-/*
-class PresenceDetector {
-    constructor(pirPin) {
-
-        this.listeners = new Map();   
-
-        var gpio = Windows.Devices.Gpio.GpioController.getDefault();
-        this.gpioPin = gpio.openPin(pirPin); 
-        this.gpioPin.debounceTimeout = 50;
-        this.gpioPin.setDriveMode(Windows.Devices.Gpio.GpioPinDriveMode.input);
-
-        this.gpioPin.addEventListener("valuechanged", function (eventArgs) {
-            
-            var gpioPinValue = pirPin.read();
-            if (gpioPinValue == Windows.Devices.Gpio.GpioPinValue.high) {
-                console.log("Motion detected");
-                lamp.switchOn();
-            }
-            else {
-                console.log("Motion undetected");
-                lamp.switchOff();
-            }
-
-
-
-            if (eventArgs.edge == Windows.Devices.Gpio.GpioPinEdge.risingEdge) {
-                console.log("Motion detected");
-                emit("presence");
-            }
-            else if (eventArgs.edge == Windows.Devices.Gpio.GpioPinEdge.fallingEdge) {
-                console.log("Motion undetected");
-                emit("unpresence");
-            }
-        });      
-    }
-
-    onPresenceDetected(callback) {
-        this.listeners.has("presence") || this.listeners.set("presence", []);
-        this.listeners.get("presence").push(callback);
-    }
-
-    onPresenceUndetected(callback) {
-        this.listeners.has("unpresence") || this.listeners.set("unpresence", []);
-        this.listeners.get("unpresence").push(callback);
-    }
-
-    emit(label, ...args) {
-        let listeners = this.listeners.get(label);
-
-        if (listeners && listeners.length) {
-            listeners.forEach((listener) => {
-                listener(...args);
-            });
-            return true;
-        }
-        return false;
-    }
-}
- 
-//module.exports = PresenceDetector;
-export { PresenceDetector }
-
+/**
+Detect motion using PIR sensor
 */
 
+'use strict';
 
 var PresenceDetector = function(pirPin) {
 
@@ -75,6 +17,8 @@ var PresenceDetector = function(pirPin) {
     this.gpioPin.setDriveMode(Windows.Devices.Gpio.GpioPinDriveMode.input);
 
     var self = this;
+
+    //Hopefully get notified on GPIO value change, when PIR detect a motion
     this.gpioPin.addEventListener("valuechanged", function (eventArgs) {            
         if (eventArgs.edge == Windows.Devices.Gpio.GpioPinEdge.risingEdge) {
             console.log("Motion detected");
@@ -91,6 +35,10 @@ var PresenceDetector = function(pirPin) {
         var gpioPinValue = self.gpioPin.read();
     }, 1000); 
 
+
+    /***
+     THIS COMMENTED CODE BELOW is a fallback if somehow GPIO interrupt is not working. Let's do pooling instead.
+    ***/
     //this.presenceDetected = false;
     //setInterval(function () {
     //    var gpioPinValue = self.gpioPin.read();
@@ -106,8 +54,7 @@ var PresenceDetector = function(pirPin) {
 
     //        self.presenceDetected = false;
     //    }
-    //}, 500);   
-    
+    //}, 500);       
 };
 
 PresenceDetector.prototype = {
@@ -147,3 +94,66 @@ PresenceDetector.prototype.onPresenceUndetected = function(callback) {
 };
 
 module.exports = PresenceDetector;
+
+/*
+//Hey, it's an attempt to use ES-6, not success though :(
+class PresenceDetector {
+    constructor(pirPin) {
+
+        this.listeners = new Map();   
+
+        var gpio = Windows.Devices.Gpio.GpioController.getDefault();
+        this.gpioPin = gpio.openPin(pirPin); 
+        this.gpioPin.debounceTimeout = 50;
+        this.gpioPin.setDriveMode(Windows.Devices.Gpio.GpioPinDriveMode.input);
+
+        this.gpioPin.addEventListener("valuechanged", function (eventArgs) {
+            
+            var gpioPinValue = pirPin.read();
+            if (gpioPinValue == Windows.Devices.Gpio.GpioPinValue.high) {
+                console.log("Motion detected");
+                lamp.switchOn();
+            }
+            else {
+                console.log("Motion undetected");
+                lamp.switchOff();
+            }
+
+            if (eventArgs.edge == Windows.Devices.Gpio.GpioPinEdge.risingEdge) {
+                console.log("Motion detected");
+                emit("presence");
+            }
+            else if (eventArgs.edge == Windows.Devices.Gpio.GpioPinEdge.fallingEdge) {
+                console.log("Motion undetected");
+                emit("unpresence");
+            }
+        });      
+    }
+
+    onPresenceDetected(callback) {
+        this.listeners.has("presence") || this.listeners.set("presence", []);
+        this.listeners.get("presence").push(callback);
+    }
+
+    onPresenceUndetected(callback) {
+        this.listeners.has("unpresence") || this.listeners.set("unpresence", []);
+        this.listeners.get("unpresence").push(callback);
+    }
+
+    emit(label, ...args) {
+        let listeners = this.listeners.get(label);
+
+        if (listeners && listeners.length) {
+            listeners.forEach((listener) => {
+                listener(...args);
+            });
+            return true;
+        }
+        return false;
+    }
+}
+ 
+//module.exports = PresenceDetector;
+export { PresenceDetector }
+
+*/

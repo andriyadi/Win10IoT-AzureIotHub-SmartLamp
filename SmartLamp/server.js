@@ -63,6 +63,7 @@ pirPin.addEventListener("valuechanged", function (eventArgs) {
 //    }
 //}, 500);
 
+
 /*
 Part of code that's responsible for uploading captured photo's binary to Azure Blob Storage
 */
@@ -103,8 +104,7 @@ function presenceDetected() {
 
     //When presence detected, turn on the lamp to better capture the photo
     lamp.switchOn();
-    //takePicture();
-
+    
     //Take photo of that intuder
     cam.takePhoto(function (err, file) {
         console.log(file);
@@ -118,7 +118,7 @@ function presenceDetected() {
             }
         });
 
-        //take one more
+        //take one more photo of that intruder to be sure
         //cam.takePhoto(function (err, file) {
         //    uploadBlob(file);
         //});
@@ -245,7 +245,7 @@ function deviceIsReady(dev) {
         return;
     }
 
-    //create conn string
+    //create Azure IoT Hub conn string for a device
     var connStr = "HostName=" + iothubRegistry.config.host + ";CredentialScope=Device;DeviceId=" + dev.deviceId + ";SharedAccessKey=" + dev.authentication.SymmetricKey.primaryKey;
     lamp.setIotHubConnectionString(connStr);
     
@@ -272,8 +272,8 @@ function sendTelemetryData() {
         return;
     }
 
-    var currentMA = cs.readCurrent();
-    var wattage = 220 * currentMA * 1.0 / 1000;
+    var currentInMilliAmpere = cs.readCurrent();
+    var wattage = 220 * currentInMilliAmpere * 1.0 / 1000;
 
     var adc1 = cs.adc.read(1);
     var adc2 = cs.adc.read(2);
@@ -281,8 +281,8 @@ function sendTelemetryData() {
     var data = JSON.stringify({
         "DeviceID": lamp.deviceId, 
         "Wattage": wattage,
-        "lightSensor": adc1,
-        "soundSensor": adc2
+        "LightSensor": adc1,
+        "SoundSensor": adc2
     });
 
     console.log("Sending device telemetry data:\n" + data);

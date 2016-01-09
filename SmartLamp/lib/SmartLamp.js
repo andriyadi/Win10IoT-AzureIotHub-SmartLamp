@@ -1,4 +1,7 @@
-﻿'use strict';
+﻿// Copyright (c) DycodeX. All rights reserved.
+// Author: Andri Yadi
+
+'use strict';
 
 var util = require('util');
 var Switch = require('./Switch');
