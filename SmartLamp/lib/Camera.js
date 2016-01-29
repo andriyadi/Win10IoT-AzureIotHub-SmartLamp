@@ -8,21 +8,21 @@ It's quite hard to access USB-attached web camera using Node.js, as not much doc
 
 'use strict';
 
-var Camera = function (saveFilename) {
+var Camera = function (saveFilename, initCallback) {
     this.savedPhotoFilename = saveFilename;
 
     this.mediaCapture = new Windows.Media.Capture.MediaCapture();
     this.mediaCaptureInitialized = false;
     this.isSavingPhoto = false;
 
-    this._init();
+    this._init(initCallback);
 }
 
 Camera.prototype = {
     _handleError: function (error) {
         console.error(error); // you can do better than this.
     },
-    _init: function () {
+    _init: function (callback) {
 
         var captureInitSettings = new Windows.Media.Capture.MediaCaptureInitializationSettings();
         //captureInitSettings.audioDeviceId = "";
@@ -35,7 +35,8 @@ Camera.prototype = {
             console.log("Cam initialized");
             self.mediaCaptureInitialized = true;
 
-        }, self._handleError);
+        //}, self._handleError);
+        }, callback);
 
 
         this.mediaCapture.onfailed = function (sender, errorEventArgs) {
@@ -46,10 +47,12 @@ Camera.prototype = {
 
 Camera.prototype.takePhoto = function (callback) {
     if (!this.mediaCaptureInitialized) {
+        callback(new Error("MediaCapture is not initialized yet"));
         return;
     }
 
     if (this.isSavingPhoto) {
+        callback(new Error("Camera is saving previous photo. Please wait..."));
         return;
     }
 

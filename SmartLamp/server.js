@@ -17,7 +17,11 @@ var cs = new CurrentSensor(0);
 
 //Web camera 
 var Camera = require("./lib/Camera");
-var cam = new Camera("SmartHomeCapture.jpg");
+var cam = new Camera("SmartHomeCapture.jpg", function (err) {
+    if (err) {
+        console.error(err);
+    }
+});
 
 var USE_LIGHT_SENSOR = true;
 var USE_SOUND_SENSOR = true;
@@ -137,7 +141,6 @@ presence.onPresenceUndetected(function () {
 });
 
 
-
 //Kinda main loop for detecting light and sound
 var lightSensorThresholdOn = 1000;
 var lightSensorThresholdOff = 60;
@@ -194,13 +197,30 @@ app.get("/toggle", function (req, res) {
 app.get("/adc", function (req, res) {
     var channel = req.query.channel || 0;
 
-    var curVal = adc.read(channel);
+    var theADC = cs.adc;
+    var curVal = theADC.read(channel);
     res.json({ channel: 0, value: curVal });
 });
 
 app.get("/sensor/current", function (req, res) {
     var curVal = cs.readCurrent();
     res.json({ value: curVal });
+});
+
+app.get("/cam/takePhoto", function (req, res) {
+    cam.takePhoto(function (err, file) {
+        console.log(file);
+                
+        //res.sendFile(file);
+        if (err) {
+            res.set('Content-Type', 'text/plain');
+            res.send(err.message);
+        }
+        else {
+            res.set('Content-Type', 'image/jpeg');
+            res.sendFile(file.path);
+        }
+    });
 });
 
 var server = app.listen(1337, function () {
@@ -363,6 +383,5 @@ function printResultFor(op) {
         if (res) console.log(op + ' status: ' + res.statusCode + ' ' + res.statusMessage);
     };
 }
-
  
 uwp.close();
