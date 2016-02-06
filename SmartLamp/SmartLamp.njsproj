@@ -45,6 +45,7 @@
     <OutputPath>bin\Release\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="lib\ADC.js" />
     <Compile Include="lib\Camera.js" />
     <Compile Include="lib\CurrentSensor.js" />
     <Compile Include="lib\device.js" />
